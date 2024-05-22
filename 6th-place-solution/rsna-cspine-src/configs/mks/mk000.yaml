@@ -1,0 +1,111 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data: 
+  annotations: ../data/train_2dc_seg_slices_kfold.csv
+  data_dir: ../data/
+  input: filename_2dc
+  target: label
+  outer_fold: 0
+  dataset:
+    name: ImageSegmentDataset
+    params:
+      segmentation_format: png
+      num_classes: 8
+      one_hot_encode: true
+      max_255: false
+      channels: 2dc
+      flip: true
+      invert: false
+      verbose: true
+      add_foreground_channel: false
+
+
+transform:
+  resize:
+    name: resize_ignore
+    params:
+      imsize: [256, 256]
+  augment:
+    name: simple_augment
+    params:
+      n: 3
+      p: 0.9
+  crop:
+    null
+  preprocess:
+    name: Preprocessor
+    params:
+      image_range: [0, 255]
+      input_range: [0, 1]
+      mean: [0.5, 0.5, 0.5]
+      sdev: [0.5, 0.5, 0.5]
+
+
+task:
+  name: SegmentationTask
+  params:
+
+
+model:
+  name: NetSegment2D
+  params:
+    architecture: NASFPN
+    encoder_name: tf_efficientnet_b4
+    encoder_params:
+      pretrained: true
+      depth: 5
+    decoder_params:
+      decoder_pyramid_channels: 256
+      decoder_segmentation_channels: 128
+      decoder_stack_times: 3
+      decoder_merge_policy: cat
+    deep_supervision: true
+    num_classes: 8
+    in_channels: 3
+    dropout: 0.2
+
+
+loss:
+  name: SupervisorLoss
+  params:
+    segmentation_loss: DiceBCELoss
+    scale_factors: [0.5, 0.25]
+    loss_weights: [1.0, 0.5, 0.25]
+    loss_params:
+      dice_loss_params:
+        mode: multilabel
+        exponent: 2
+        smooth: 1.0
+      bce_loss_params:
+        pos_weight: 10.0
+      dice_loss_weight: 1.0
+      bce_loss_weight: 0.2
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 3.0e-4
+    weight_decay: 5.0e-4
+
+
+scheduler:
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 32
+  num_epochs: 20
+
+
+evaluate:
+  metrics: [DSC]
+  monitor: dsc_ignore_mean
+  mode: max
+
+

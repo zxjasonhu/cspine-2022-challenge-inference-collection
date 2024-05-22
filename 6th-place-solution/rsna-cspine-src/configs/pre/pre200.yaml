@@ -1,0 +1,96 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data:
+  annotations: ../data/train_cspine_crunchtime.csv
+  data_dir: ../data/train-individual-vertebrae-cropped-pngs/
+  input: filename
+  target: [C1_frac, C2_frac, C3_frac, C4_frac, C5_frac, C6_frac, C7_frac, fracture]
+  outer_fold: 0
+  dataset:
+    name: ImageDataset
+    params:
+      flip: true
+      invert: false
+      channels: bgr
+  sampler:
+    name: BalancedSampler
+    params:
+      pos_frac: 0.1
+      N_sample: 100000
+
+
+transform:
+  resize:
+    name: resize_ignore
+    params:
+      imsize: [320, 320]
+  augment:
+    name: rand_augment
+    params:
+      n: 3
+      p: 0.95
+      spatial_only: true
+      dropout: false
+  crop:
+    null
+  preprocess:
+    name: Preprocessor
+    params:
+      image_range: [0, 255]
+      input_range: [0, 1]
+      mean: [0.5, 0.5, 0.5]
+      sdev: [0.5, 0.5, 0.5]
+
+
+task:
+  name: ClassificationTask
+  params:
+
+
+model:
+  name: Net2D
+  params:
+    backbone: tf_efficientnetv2_s
+    pretrained: true
+    num_classes: 8
+    dropout: 0.2
+    pool: gem
+    in_channels: 3
+    multisample_dropout: false
+
+
+loss:
+  name: MultilabelWeightedBCE
+  params:
+    weights: [1, 1, 1, 1, 1, 1, 1, 14]
+    pos_weight: 2.0
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 3.0e-4
+    weight_decay: 5.0e-4
+
+
+scheduler:
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 64
+  num_epochs: 5
+
+
+evaluate:
+  metrics: [AUROC]
+  monitor: auc_mean
+  mode: max
+
+
+

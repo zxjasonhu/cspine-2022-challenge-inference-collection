@@ -1,0 +1,109 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data:
+  annotations: ../data/train_3d_chunks_pos_only_kfold.csv
+  data_dir: ../data/
+  input: filename
+  target: label
+  outer_fold: 0
+  dataset:
+    name: NumpyChunkSegmentDataset
+    params:
+      segmentation_format: numpy
+      channels: grayscale
+      flip: true
+      invert: false
+      verbose: true
+      num_images: 32
+      crop_or_resample: crop
+  pin_memory: false
+
+
+transform:
+  resize:
+    name: resize_ignore
+    params:
+      imsize: [384, 384]
+  augment:
+    name: simple_augment
+    params:
+      n: 3
+      p: 1.0
+  crop:
+    null
+  preprocess:
+    name: Preprocessor
+    params:
+      image_range: [0, 255]
+      input_range: [0, 1]
+      mean: [0.5, 0.5, 0.5]
+      sdev: [0.5, 0.5, 0.5]
+
+
+task:
+  name: SegmentationTask3D
+  params:
+    chunk_validation: true
+
+
+model:
+  name: NetSegment3D
+  params:
+    architecture: Unet_3D
+    encoder_name: x3d_l
+    encoder_params:
+      pretrained: true
+      depth: 5
+      z_strides: [2, 2, 2, 2, 2]
+    decoder_params:
+      decoder_use_batchnorm: true
+      decoder_channels: [256, 128, 64, 32, 16]
+      decoder_attention_type: null
+      upsampling: 1
+    deep_supervision: true
+    num_classes: 3
+    in_channels: 1
+    dropout: 0.2
+
+
+loss:
+  name: SupervisorLoss
+  params:
+    segmentation_loss: DiceBCELoss
+    loss_params:
+      dice_loss_params:
+        mode: multilabel
+        exponent: 2
+        smooth: 1.0
+      bce_loss_params:
+        pos_weight: 1
+      dice_loss_weight: 1.0
+      bce_loss_weight: 0.4
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 3.0e-4
+    weight_decay: 5.0e-4
+
+
+scheduler:
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 8
+  num_epochs: 100
+
+
+evaluate:
+  batch_size: 1
+  metrics: [DSC]
+  monitor: dsc_ignore_mean
+  mode: max

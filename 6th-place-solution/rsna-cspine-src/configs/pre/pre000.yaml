@@ -1,0 +1,89 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data:
+  annotations: ../data/train_initial_for_2d_pseudolabel_with_split.csv
+  data_dir: ../data/pngs/
+  input: filename
+  target: fracture
+  outer_fold: 0
+  dataset:
+    name: ImageDataset
+    params:
+      flip: true
+      transpose: true
+      invert: false
+      channels: grayscale
+
+
+transform:
+  resize:
+    name: resize_ignore
+    params:
+      imsize: [640, 640]
+  augment:
+    null
+  crop:
+    name: crop
+    params:
+      imsize: [560, 560]
+  preprocess:
+    name: Preprocessor
+    params:
+      image_range: [0, 255]
+      input_range: [0, 1]
+      mean: [0.5]
+      sdev: [0.5]
+
+
+task:
+  name: ClassificationTask
+  params:
+
+
+model:
+  name: Net2D
+  params:
+    backbone: tf_efficientnetv2_m
+    backbone_params:
+      drop_path_rate: 0.0
+    pretrained: true
+    num_classes: 1
+    dropout: 0.0
+    pool: avg
+    in_channels: 1
+
+
+loss:
+  name: BCEWithLogitsLoss
+  params:
+    pos_weight: 7.0
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 3.0e-4
+    weight_decay: 5.0e-4
+
+
+scheduler:
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 16
+  num_epochs: 5
+
+
+evaluate:
+  metrics: [AUROC]
+  monitor: auc_mean
+  mode: max
+
+
+

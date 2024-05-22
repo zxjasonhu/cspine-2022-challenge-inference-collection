@@ -1,0 +1,90 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data:
+  annotations: ../data/train_fracture_pseudoslices_fold0_kfold.csv
+  data_dir: ../data/pngs/
+  input: filename_2dc
+  target: fracture
+  outer_fold: 0
+  dataset:
+    name: ImageDataset
+    params:
+      flip: true
+      invert: false
+      reverse_channels: true
+      channels: 2dc
+
+
+transform:
+  resize:
+    name: resize_ignore
+    params:
+      imsize: [640, 640]
+  augment:
+    name: simple_augment
+    params:
+      n: 3
+      p: 0.9
+  crop:
+    name: crop
+    params:
+      imsize: [560, 560]
+  preprocess:
+    name: Preprocessor
+    params:
+      image_range: [0, 255]
+      input_range: [0, 1]
+      mean: [0.5, 0.5, 0.5]
+      sdev: [0.5, 0.5, 0.5]
+
+
+task:
+  name: ClassificationTask
+  params:
+
+
+model:
+  name: Net2D
+  params:
+    backbone: tf_efficientnet_b6_ns
+    pretrained: true
+    num_classes: 1
+    dropout: 0.2
+    pool: avg
+    in_channels: 3
+    multisample_dropout: true
+
+
+loss:
+  name: BCEWithLogitsLoss
+  params:
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 3.0e-4
+    weight_decay: 5.0e-4
+
+
+scheduler:
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 16
+  num_epochs: 10
+
+
+evaluate:
+  metrics: [AUROC]
+  monitor: auc_mean
+  mode: max
+
+
+

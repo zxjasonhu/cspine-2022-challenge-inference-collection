@@ -1,0 +1,92 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data:
+  annotations: ../data/train_whole_cspine_kfold.csv
+  data_dir: ../data/train-numpy-full-cspine
+  input: filename
+  target: [C1, C2, C3, C4, C5, C6, C7, patient_overall]
+  outer_fold: 0
+  dataset:
+    name: NumpyChunkDataset
+    params:
+      flip: true
+      invert: false
+      channels: grayscale
+      z_lt: resample_resample
+      z_gt: resample_resample
+      num_images: 128
+    pin_memory: false
+
+
+transform:
+  resize:
+    name: resize_ignore_3d
+    params:
+      imsize: [128, 288, 288]
+  augment:
+    null
+  crop:
+    null
+  preprocess:
+    name: Preprocessor
+    params:
+      image_range: [0, 255]
+      input_range: [0, 1]
+      mean: [0.5]
+      sdev: [0.5]
+
+
+task:
+  name: ClassificationTask
+  params:
+
+
+model:
+  name: Net3D
+  params:
+    backbone: x3d_l
+    backbone_params:
+      z_strides: [2, 1, 1, 1, 1]
+    pretrained: true
+    num_classes: 8
+    dropout: 0.2
+    pool: avg
+    in_channels: 1
+    multisample_dropout: true
+
+
+loss:
+  name: MultilabelWeightedBCE
+  params:
+    weights: [1, 1, 1, 1, 1, 1, 1, 7]
+    pos_weight: 2.0
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 3.0e-4
+    weight_decay: 5.0e-4
+
+
+scheduler:
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 4
+  num_epochs: 10
+
+
+evaluate:
+  metrics: [CompetitionMetric, AUROC]
+  monitor: comp_metric
+  mode: min
+
+
+

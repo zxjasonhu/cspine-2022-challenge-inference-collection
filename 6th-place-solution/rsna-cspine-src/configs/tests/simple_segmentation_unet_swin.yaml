@@ -1,0 +1,99 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data: 
+  annotations: ../data/tests/tinyptx/train_all_kfold.csv
+  data_dir: ../data/tests/tinyptx/
+  input: filename
+  target: label
+  outer_fold: 0
+  dataset:
+    name: ImageSegmentDataset
+    params:
+      segmentation_format: png
+      num_classes: 1
+      max_255: true
+      channels: grayscale
+      flip: true
+      invert: false
+      verbose: true
+
+
+transform:
+  resize:
+    name: resize_ignore
+    params:
+      imsize: [512, 512]
+  augment:
+    name: simple_augment
+    params:
+      n: 3
+      p: 0.9
+  crop:
+    null
+  preprocess: 
+    name: Preprocessor
+    params:
+      image_range: [0, 255]
+      input_range: [0, 1]
+      mean: [0.5, 0.5, 0.5]
+      sdev: [0.5, 0.5, 0.5]
+
+
+task: 
+  name: SegmentationTask
+  params: 
+
+
+model:
+  name: NetSegment2D
+  params:
+    architecture: Unet
+    encoder_name: swin 
+    encoder_params: 
+      pretrained: true
+      model_size: small
+      pretrain_img_size: 224
+      window_size: 7
+      depth: 4 # needs to be 4 for swin vs. 5 for others
+    decoder_params:
+      decoder_use_batchnorm: true 
+      decoder_channels: [256, 128, 64, 32]
+      decoder_attention_type: null
+      upsampling: 2
+    num_classes: 1
+    in_channels: 1
+    dropout: 0.2
+
+
+loss:
+  name: WeightedBCE
+  params:
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 3.0e-4
+    weight_decay: 5.0e-4
+
+
+scheduler: 
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 16
+  num_epochs: 10
+
+
+evaluate: 
+  metrics: [DSC]
+  monitor: dsc_mean
+  mode: max
+
+

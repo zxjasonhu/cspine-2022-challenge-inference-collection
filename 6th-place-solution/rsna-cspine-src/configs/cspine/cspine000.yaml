@@ -1,0 +1,90 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data:
+  annotations: ../data/train_cspine_present_kfold.csv
+  data_dir: ../data/pngs/
+  input: filename
+  target: cspine_present
+  outer_fold: 0
+  dataset:
+    name: ImageDataset
+    params:
+      flip: true
+      invert: false
+      reverse_channels: false
+      channels: grayscale
+
+
+transform:
+  resize:
+    name: resize_ignore
+    params:
+      imsize: [256, 256]
+  augment:
+    name: rand_augment
+    params:
+      n: 3
+      p: 0.95
+  crop:
+    name: crop
+    params:
+      imsize: [224, 224]
+  preprocess:
+    name: Preprocessor
+    params:
+      image_range: [0, 255]
+      input_range: [0, 1]
+      mean: [0.5]
+      sdev: [0.5]
+
+
+task:
+  name: ClassificationTask
+  params:
+
+
+model:
+  name: Net2D
+  params:
+    backbone: tf_efficientnet_b0
+    pretrained: true
+    num_classes: 1
+    dropout: 0.2
+    pool: avg
+    in_channels: 1
+    multisample_dropout: false
+
+
+loss:
+  name: BCEWithLogitsLoss
+  params:
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 3.0e-4
+    weight_decay: 5.0e-4
+
+
+scheduler:
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 16
+  num_epochs: 3
+
+
+evaluate:
+  metrics: [AUROC]
+  monitor: auc_mean
+  mode: max
+
+
+

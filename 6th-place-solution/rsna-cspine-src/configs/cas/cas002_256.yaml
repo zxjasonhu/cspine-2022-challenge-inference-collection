@@ -1,0 +1,94 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data:
+  annotations: ../data/train_cas_2dc_kfold.csv
+  data_dir: ../data/pngs/
+  input: filename_2dc
+  target: fracture_cas
+  outer_fold: 0
+  dataset:
+    name: ImageDataset
+    params:
+      flip: true
+      invert: false
+      reverse_channels: false
+      channels: 2dc
+
+
+transform:
+  resize:
+    name: resize_ignore
+    params:
+      imsize: [256, 256]
+  augment:
+    name: spatial_augment_with_dropout
+    params:
+      n: 3
+      p: 0.95
+  crop:
+    name: crop
+    params:
+      imsize: [224, 224]
+  preprocess:
+    name: Preprocessor
+    params:
+      image_range: [0, 255]
+      input_range: [0, 1]
+      mean: [0.5, 0.5, 0.5]
+      sdev: [0.5, 0.5, 0.5]
+
+
+task:
+  name: ClassificationTask
+  params:
+
+
+model:
+  name: Net2D
+  params:
+    backbone: tf_efficientnet_b0
+    backbone_params:
+      drop_path_rate: 0.2
+    pretrained: true
+    num_classes: 1
+    dropout: 0.2
+    pool: avg
+    in_channels: 1
+    multisample_dropout: false
+    add_conv3d_reduce:
+      kernel_size: [5, 3, 3]
+
+
+loss:
+  name: BCEWithLogitsLoss
+  params:
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 3.0e-4
+    weight_decay: 5.0e-4
+
+
+scheduler:
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 128
+  num_epochs: 5
+
+
+evaluate:
+  metrics: [AUROC]
+  monitor: auc_mean
+  mode: max
+
+
+

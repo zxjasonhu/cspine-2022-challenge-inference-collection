@@ -1,0 +1,92 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data:
+  annotations: ../data/train_cas_kfold_all.csv
+  data_dir: ../data/pngs/
+  input: filename
+  target: fracture_cas
+  outer_fold: 0
+  dataset:
+    name: ImageDataset
+    params:
+      flip: true
+      transpose: true
+      invert: false
+      channels: grayscale
+
+
+transform:
+  resize:
+    name: resize_ignore
+    params:
+      imsize: [640, 640]
+  augment:
+    name: rand_augment
+    params:
+      n: 3
+      p: 0.95
+      spatial_only: false
+      dropout: false
+  crop:
+    name: crop
+    params:
+      imsize: [560, 560]
+  preprocess:
+    name: Preprocessor
+    params:
+      image_range: [0, 255]
+      input_range: [0, 1]
+      mean: [0.5]
+      sdev: [0.5]
+
+
+task:
+  name: ClassificationTask
+  params:
+
+
+model:
+  name: Net2D
+  params:
+    backbone: tf_efficientnet_b6_ns
+    pretrained: true
+    num_classes: 1
+    dropout: 0.2
+    multisample_dropout: true
+    pool: avg
+    in_channels: 1
+
+
+loss:
+  name: BCEWithLogitsLoss
+  params:
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 3.0e-4
+    weight_decay: 5.0e-4
+
+
+scheduler:
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 16
+  num_epochs: 5
+
+
+evaluate:
+  metrics: [AUROC]
+  monitor: auc_mean
+  mode: max
+
+
+

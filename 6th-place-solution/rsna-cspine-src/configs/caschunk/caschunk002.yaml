@@ -1,0 +1,67 @@
+experiment:
+  seed: 88
+  save_dir: ../experiments/
+
+
+data:
+  annotations: ../data/train_vertebra_chunks_with_seg_kfold.csv
+  data_dir: ../data/train-cascrop007-chunk-features/foldx
+  input: filename
+  target: fracture
+  outer_fold: 0
+  dataset:
+    name: FeatureDataset
+    params:
+      seq_len: 32
+      resample: true
+      reverse: true
+      exam_level_label: true
+
+
+task:
+  name: ClassificationTask
+  params:
+
+
+model:
+  name: Transformer
+  params:
+    num_classes: 1
+    embedding_dim: 1280
+    hidden_dim: 1280
+    n_layers: 3
+    n_heads: 16
+    predict_sequence: false
+
+
+loss:
+  name: BCEWithLogitsLoss
+  params:
+    pos_weight: 2.0
+
+
+optimizer:
+  name: AdamW
+  params:
+    lr: 1.0e-5
+    weight_decay: 5.0e-4
+
+
+scheduler:
+  name: CosineAnnealingLR
+  params:
+    final_lr: 0.0
+
+
+train:
+  batch_size: 32
+  num_epochs: 10
+
+
+evaluate:
+  metrics: [AUROC]
+  monitor: auc_mean
+  mode: max
+
+
+

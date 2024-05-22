@@ -1,0 +1,4 @@
+python step1_trans_segmentation_to_nii.py
+python step2_trans_bbox_to_nii.py
+python step3_trans_public_datasets_to_nii.py
+python step4_split_train_val.py
