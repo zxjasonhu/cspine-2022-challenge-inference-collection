@@ -53,7 +53,18 @@ To generate the Grad-CAM visualizations, run the corresponding Grad-CAM script. 
 
 ## Citation
 
-If you find this repository helpful, please consider citing our work and the original authors of the models.
+If you find this repository helpful, please consider citing our [paper](https://pubs.rsna.org/doi/10.1148/ryai.230550) and the original authors of the models.
+
+```
+@article{hu2024assessing, 
+  title     = {Assessing the Performance of Models from the 2022 RSNA Cervical Spine Fracture Detection Competition at a Level I Trauma Center},
+  author    = {Hu, Zixuan and Patel, Markand and Ball, Ball L. and Lin, Hui Ming and Prevedello, Luciano M. and Naseri, Mitra and Mathur, Shobhit and Moreland, Robert and Wilson, Jefferson and Witiw, Christopher and Yeom, Kristen W. and Ha, Qishen and Hanley, Darragh and Seferbekov, Selim and Chen, Hao and Singer, Philipp and Henkel, Christof and Pfeiffer, Pascal and Pan, Ian and Sheoran, Harshit and Li, Wuqi and Flanders, Adam E. and Kitamura, Felipe C. and Richards, Tyler and Talbott, Jason and Sejdić, Ervin and Colak, Errol},
+  journal   = {Radiology: Artificial Intelligence},
+  year      = {2024},
+  doi       = {10.1148/ryai.230550},
+  url       = {https://pubs.rsna.org/doi/10.1148/ryai.230550}
+}
+```
 
 ## Acknowledgments
 
