@@ -507,7 +507,7 @@ class MDAIModel:
         full_mask = None
         for model in models:
             target_layers = [model.backbone.layer4[-1]]
-            with GradCAM3D(model=model, target_layers=target_layers, use_cuda=torch.cuda.is_available()) as cam:
+            with GradCAM3D(model=model, target_layers=target_layers) as cam:
                 grayscale_cam = cam(input_tensor=input_tensor, targets=targets)
                 # print(f"grayscale_cam shape", grayscale_cam.shape)
                 if full_mask is None:

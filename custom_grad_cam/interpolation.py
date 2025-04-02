@@ -1,35 +1,40 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import numpy as np
+from pytorch_grad_cam.utils.image import show_cam_on_image
 
 import cv2
 
 
-def cam_to_intermediate_cam(cam: np.ndarray, interval: int, length: int = 40, h: int = 512,
+def cam_to_intermediate_cam(cam: np.ndarray, trunc: int, length: int = 40, h: int = 512,
                             w: int = 512, ) -> np.ndarray:
     grayscale_cam_resized = np.zeros((length, h, w))
     cam_length = cam.shape[0]
     frame_interval = cam_length / length
     max_index = cam_length - 1
 
+    offset_index = int((length - max_index * length / cam_length) / 2)
 
-    for i in range(length):
-        # Find the indices of the original frames that we'll interpolate between
-        idx1 = int(i / length * frame_interval)
+    # Edge handling
+    for i in range(offset_index):
+        grayscale_cam_resized[i] = cv2.resize(cam[0], (w, h)) * ((i + 1) / offset_index)
+        grayscale_cam_resized[length - i - 1] = cv2.resize(cam[cam_length - i - 1], (w, h)) * ((i + 1) / offset_index)
+
+    # Main loop interpolation
+    for j in range(offset_index, length - offset_index):
+        ind = j - offset_index
+        idx1 = int(ind * frame_interval)
         idx2 = min(idx1 + 1, max_index)
+        alpha = (ind * frame_interval) - idx1
 
-        # Find the interpolation weight
-        alpha = (i / length * frame_interval) - idx1
-
-        # Interpolate between the original frames
         cam1 = cv2.resize(cam[idx1], (w, h))
         cam2 = cv2.resize(cam[idx2], (w, h))
-        grayscale_cam_resized[i] = cv2.addWeighted(cam1, 1 - alpha, cam2, alpha, 0)
+        grayscale_cam_resized[j] = cv2.addWeighted(cam1, 1 - alpha, cam2, alpha, 0)
 
-    return grayscale_cam_resized[:interval, :, :]
+    return grayscale_cam_resized[:trunc, :, :]
 
 
-def naive_overlap_cams(cam: np.ndarray, target_length, h:int=512, w:int=512) -> np.ndarray:
+def naive_overlap_cams(cam: np.ndarray, target_length, h: int = 512, w: int = 512) -> np.ndarray:
     assert cam.shape[0] == 2, f"cam.shape[0]={cam.shape[0]} != 2"
 
     _cam = np.zeros((target_length, h, w))
@@ -43,7 +48,7 @@ def naive_overlap_cams(cam: np.ndarray, target_length, h:int=512, w:int=512) -> 
     return _cam
 
 
-def interpolate_cam_on_voxel(voxel: np.ndarray, cam: np.ndarray, conversion_info: List[Dict])-> np.ndarray:
+def interpolate_cam_on_voxel(voxel: np.ndarray, cam: np.ndarray, conversion_info: List[Dict]) -> np.ndarray:
     assert len(conversion_info) == cam.shape[
         0], f"len(conversion_info)={len(conversion_info)} != cam.shape[0]={cam.shape[0]}"
 
@@ -51,7 +56,8 @@ def interpolate_cam_on_voxel(voxel: np.ndarray, cam: np.ndarray, conversion_info
     final_mask = np.zeros(voxel.shape)
 
     # parse conversion info
-    for i in range(len(conversion_info)):
+    i = 0
+    while i < len(conversion_info):
         info = conversion_info[i]
         _type = info["type"]
         _total_slice = info["total_slice"]
@@ -67,14 +73,15 @@ def interpolate_cam_on_voxel(voxel: np.ndarray, cam: np.ndarray, conversion_info
         real_width = _x2 - _x1
 
         if _type == "overlap":
-            i += 1
             former = cam_to_intermediate_cam(cam[i], 40, 40, real_height, real_width)
             latter = cam_to_intermediate_cam(cam[i + 1], 40, 40, real_height, real_width)
             current_cam = naive_overlap_cams(np.stack([former, latter]), _total_slice, real_height, real_width)
             current_cam = cam_to_intermediate_cam(current_cam, real_length, real_length, real_height, real_width)
+            i += 1  # skip the next one
         elif _type == "padding":
             slice_indicator[_z1:_z2] = 1
-            current_cam = cam_to_intermediate_cam(cam[i], int(40 * real_length / _total_slice), real_length, real_height, real_width)
+            current_cam = cam_to_intermediate_cam(cam[i], int(40 * real_length / _total_slice), real_length,
+                                                  real_height, real_width)
         elif _type == "normal":
             slice_indicator[_z1:_z2] = 1
             current_cam = cam_to_intermediate_cam(cam[i], real_length, real_length, real_height, real_width)
@@ -87,7 +94,8 @@ def interpolate_cam_on_voxel(voxel: np.ndarray, cam: np.ndarray, conversion_info
         #     current_cam = np.ones_like(current_cam)
         final_mask[_z1:_z2, _y1:_y2, _x1:_x2] += current_cam
 
-    # No need of normalization
+        i += 1
+
     return final_mask
 
 def convert_to_rgb(image):

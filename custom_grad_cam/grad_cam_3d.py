@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import cv2
 import numpy as np
@@ -6,38 +6,9 @@ import torch
 from pytorch_grad_cam.base_cam import BaseCAM
 from pytorch_grad_cam.utils import get_2d_projection
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+from pytorch_grad_cam.utils.image import scale_cam_image
 
 import traceback
-
-
-def scale_cam_image(cam, target_size=None) -> np.ndarray:
-    result = []
-    if len(cam.shape) == 4:
-        for local_cam in cam:
-            local_result = []
-            # print(f"local cam shape", local_cam.shape)
-            local_cam = local_cam - np.min(local_cam)
-            local_cam = local_cam / (1e-7 + np.max(local_cam))
-            for img in local_cam:
-                if target_size is not None:
-                    img = cv2.resize(img, target_size, interpolation=cv2.INTER_LINEAR)
-                local_result.append(img)
-            local_result = np.float32(local_result)
-            result.append(local_result)
-        result = np.float32(result)
-        # print(f"result shape", result.shape)
-        return result
-
-    for img in cam:
-        img = img - np.min(img)
-        img = img / (1e-7 + np.max(img))
-        if target_size is not None:
-            img = cv2.resize(img, target_size)
-        result.append(img)
-    result = np.float32(result)
-
-    return result
-
 
 class GradCAM3D(BaseCAM):
     def __init__(self, model, target_layers, reshape_transform=None):
@@ -144,7 +115,6 @@ class GradCAM3D(BaseCAM):
                 eigen_smooth,
             )
             cam = np.maximum(cam, 0)
-
             scaled = scale_cam_image(cam, target_size)
 
             cam_per_target_layer.append(scaled[None, :])
