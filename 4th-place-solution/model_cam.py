@@ -12,8 +12,8 @@ import pydicom
 import torch
 from albumentations import ReplayCompose
 
-sys.path.append('../custom_grad_cam/') # customized grad cam lib
-from grad_cam_3d import GradCAM3D
+sys.path.append('../grad_cam_interpolation/') # customized grad cam lib
+from pytorch_grad_cam import GradCAM
 from interpolation import interpolate_cam_on_voxel
 
 from pytorch_grad_cam.utils.model_targets import BinaryClassifierOutputTarget
@@ -507,7 +507,7 @@ class MDAIModel:
         full_mask = None
         for model in models:
             target_layers = [model.backbone.layer4[-1]]
-            with GradCAM3D(model=model, target_layers=target_layers) as cam:
+            with GradCAM(model=model, target_layers=target_layers) as cam:
                 grayscale_cam = cam(input_tensor=input_tensor, targets=targets)
                 # print(f"grayscale_cam shape", grayscale_cam.shape)
                 if full_mask is None:
